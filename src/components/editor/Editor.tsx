@@ -26,6 +26,7 @@ import {
 import { useShallow } from "zustand/react/shallow";
 import { GRID, componentSize, isComponentKind } from "@/lib/circuit/catalog";
 import { toDocument } from "@/lib/circuit/document";
+import { findContactEdges, portKey } from "@/lib/circuit/contacts";
 import { simulate } from "@/lib/circuit/simulate";
 import type { CircuitDocument, ComponentKind, SimEdge, SimNode } from "@/lib/circuit/types";
 import { useCircuitStore, type CircuitNode } from "@/store/circuitStore";
@@ -190,22 +191,45 @@ function EditorInner({ initialDocument, onChange }: EditorProps) {
 
   // 부품을 끄는 동안(위치만 바뀔 때)은 다시 계산하지 않도록
   // 시뮬레이션에 필요한 값만 문자열 키로 만들어 비교한다.
+  const wires = edges.map<SimEdge>((e) => ({
+    source: e.source,
+    sourceHandle: e.sourceHandle,
+    target: e.target,
+    targetHandle: e.targetHandle,
+  }));
+  // 선 없이 연결점끼리 맞닿은 곳도 연결로 계산한다
+  const contacts = findContactEdges(
+    nodes.map((n) => ({
+      id: n.id,
+      kind: n.data.kind,
+      position: n.position,
+      scale: n.data.scale,
+    })),
+    wires,
+  );
   const simKey = JSON.stringify({
     nodes: nodes.map<SimNode>((n) => ({
       id: n.id,
       kind: n.data.kind,
       on: n.data.kind === "CLOCK" ? (clockLevels[n.id] ?? false) : n.data.on,
     })),
-    edges: edges.map<SimEdge>((e) => ({
-      source: e.source,
-      sourceHandle: e.sourceHandle,
-      target: e.target,
-      targetHandle: e.targetHandle,
-    })),
+    edges: [...wires, ...contacts],
+    contacts,
   });
   const simulation = useMemo(() => {
-    const input = JSON.parse(simKey) as { nodes: SimNode[]; edges: SimEdge[] };
-    return simulate(input.nodes, input.edges);
+    const input = JSON.parse(simKey) as {
+      nodes: SimNode[];
+      edges: SimEdge[];
+      contacts: SimEdge[];
+    };
+    const contactDrivers: Record<string, string> = {};
+    const joinedPorts = new Set<string>();
+    for (const c of input.contacts) {
+      contactDrivers[portKey(c.target, c.targetHandle!)] = c.source;
+      joinedPorts.add(portKey(c.target, c.targetHandle!));
+      joinedPorts.add(portKey(c.source, c.sourceHandle!));
+    }
+    return { ...simulate(input.nodes, input.edges), contactDrivers, joinedPorts };
   }, [simKey]);
 
   // ── 부품 추가 ────────────────────────────────

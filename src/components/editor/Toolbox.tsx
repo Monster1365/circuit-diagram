@@ -1,6 +1,6 @@
 "use client";
 
-import type { DragEvent } from "react";
+import { useState, type DragEvent } from "react";
 import { CATALOG, GATE_KINDS, IO_KINDS } from "@/lib/circuit/catalog";
 import { buildGroupTree, groupName, membersOf, type GroupTreeItem } from "@/lib/circuit/groups";
 import type { ComponentKind, GateKind } from "@/lib/circuit/types";
@@ -99,6 +99,15 @@ function PlacedList() {
   const nodes = useCircuitStore((s) => s.nodes);
   const focus = useFocusNodes();
   const tree = buildGroupTree(nodes);
+  // 접어 둔 그룹 id (목록 표시용 화면 상태라 회로 데이터에는 저장하지 않는다)
+  const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(() => new Set());
+  const toggleCollapsed = (groupId: string) =>
+    setCollapsed((prev) => {
+      const next = new Set(prev);
+      if (next.has(groupId)) next.delete(groupId);
+      else next.add(groupId);
+      return next;
+    });
 
   return (
     <section className="flex min-h-0 flex-1 flex-col p-3">
@@ -113,7 +122,13 @@ function PlacedList() {
       ) : (
         <ul className="-mx-1 min-h-0 flex-1 space-y-0.5 overflow-y-auto px-1">
           {tree.map((item) => (
-            <TreeRow key={item.type === "group" ? item.id : item.node.id} item={item} focus={focus} />
+            <TreeRow
+              key={item.type === "group" ? item.id : item.node.id}
+              item={item}
+              focus={focus}
+              collapsed={collapsed}
+              onToggleCollapsed={toggleCollapsed}
+            />
           ))}
         </ul>
       )}
@@ -124,34 +139,69 @@ function PlacedList() {
 function TreeRow({
   item,
   focus,
+  collapsed,
+  onToggleCollapsed,
 }: {
   item: GroupTreeItem<CircuitNode>;
   focus: (nodes: CircuitNode[]) => void;
+  collapsed: ReadonlySet<string>;
+  onToggleCollapsed: (groupId: string) => void;
 }) {
   if (item.type === "node") {
     return <PlacedItem node={item.node} onClick={() => focus([item.node])} />;
   }
   const members = membersOf(item);
+  const name = groupName(item.id);
+  const isOpen = !collapsed.has(item.id);
+  const listId = `cd-group-list-${item.id}`;
   return (
     <li>
-      <button
-        type="button"
-        onClick={() => focus(members)}
-        className={`cd-list-item font-semibold ${members.every((m) => m.selected) ? "cd-list-item--selected" : ""}`}
+      <div
+        className={`flex w-full items-center rounded-[5px] text-xs font-semibold hover:bg-cd-panel-hover ${members.every((m) => m.selected) ? "cd-list-item--selected" : ""}`}
       >
-        <span className="text-cd-muted">▾</span>
-        {groupName(item.id)}
-        <span className="ml-auto text-[10px] font-normal text-cd-muted">{members.length}개</span>
-      </button>
-      <ul className="ml-3 space-y-0.5 border-l border-cd-border pl-1.5">
-        {item.items.map((child) => (
-          <TreeRow
-            key={child.type === "group" ? child.id : child.node.id}
-            item={child}
-            focus={focus}
-          />
-        ))}
-      </ul>
+        {/* 화살표: 접기/펼치기 */}
+        <button
+          type="button"
+          onClick={() => onToggleCollapsed(item.id)}
+          aria-expanded={isOpen}
+          aria-controls={listId}
+          aria-label={`${name} ${isOpen ? "접기" : "펼치기"}`}
+          title={isOpen ? "접기" : "펼치기"}
+          className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-cd-muted hover:text-cd-text"
+        >
+          <svg
+            viewBox="0 0 12 12"
+            className={`h-2.5 w-2.5 transition-transform ${isOpen ? "rotate-90" : ""}`}
+            fill="currentColor"
+          >
+            <path d="M4 2.5 8.5 6 4 9.5z" />
+          </svg>
+        </button>
+        {/* 이름: 그룹 선택 후 그 위치로 이동 */}
+        <button
+          type="button"
+          onClick={() => focus(members)}
+          className="flex min-w-0 flex-1 items-center gap-1.5 py-[3px] pr-1.5 text-left"
+        >
+          <span className="truncate">{name}</span>
+          <span className="ml-auto shrink-0 text-[10px] font-normal text-cd-muted">
+            {members.length}개
+          </span>
+        </button>
+      </div>
+      {isOpen && (
+        <ul id={listId} className="ml-3 space-y-0.5 border-l border-cd-border pl-1.5">
+          {item.items.map((child) => (
+            <TreeRow
+              key={child.type === "group" ? child.id : child.node.id}
+              item={child}
+              focus={focus}
+              collapsed={collapsed}
+              onToggleCollapsed={onToggleCollapsed}
+            />
+          ))}
+        </ul>
+      )}
     </li>
   );
 }

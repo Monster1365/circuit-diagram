@@ -19,6 +19,7 @@
 - 캔버스 조작: 왼쪽 드래그=선택 상자, 휠/두 손가락=이동, 가운데 버튼 드래그=이동, 핀치·Cmd/Ctrl+휠=확대
 - 되돌리기: store의 `checkpoint()`가 변경 직전 상태를 `past`에 기록(최대 100개). 같은 순간의 여러 변경(부품+선 삭제)은 하나로 합치고, 끌기는 시작 시점에 한 번만 기록. 선택 변경은 기록하지 않는다. 새 변경 작업을 추가할 때는 `checkpoint()`를 먼저 호출할 것
 - 클립보드: `src/lib/circuit/clipboard.ts` (브라우저 메모리). 단축키는 `Editor.tsx`에서 물리 키 `event.code`로 처리(한글 입력 대응)
+- 겹침 연결: `src/lib/circuit/contacts.ts`의 `findContactEdges`가 출력점·입력점이 같은 좌표인 곳을 연결로 계산(선이 있으면 선 우선). Editor에서 선과 합쳐 시뮬레이션하고, 겹친 점은 `cd-handle--joined`로 표시
 - 격자 규칙: 부품 크기와 연결점 위치는 `catalog.ts`의 `GRID`(20px) 배수(`size`, `inputYs`, `outputY`). 노드에 CSS border를 쓰면 연결점이 밀리므로 테두리는 SVG나 inset box-shadow로 그린다
 - `src/components/editor/` — React Flow 캔버스, 도구상자, 상단바, 부품 노드, 선
 - `@xyflow/react`는 v13: 변경 적용은 `changes.applyTo(nodes)`, 색 모드는 `forceColorMode` prop
