@@ -2,10 +2,10 @@
 export type GateKind = "AND" | "OR" | "NOT" | "NAND" | "NOR" | "XOR" | "XNOR";
 
 /** 캔버스에 놓을 수 있는 모든 부품 종류 */
-export type ComponentKind = GateKind | "POWER" | "SWITCH" | "LED";
+export type ComponentKind = GateKind | "POWER" | "SWITCH" | "LED" | "CLOCK";
 
 /** React Flow 노드 타입 (렌더링 컴포넌트 선택용) */
-export type CircuitNodeType = "gate" | "power" | "switch" | "led";
+export type CircuitNodeType = "gate" | "power" | "switch" | "led" | "clock";
 
 /**
  * 노드에 저장되는 데이터. 직렬화 가능한 값만 둔다.
@@ -15,6 +15,10 @@ export type CircuitNodeData = {
   kind: ComponentKind;
   /** 전원: 켜짐 / 스위치: 닫힘. 다른 부품은 사용하지 않음 */
   on: boolean;
+  /** 화면·로그에 표시할 이름 (LED 1, CLK 1 …). LED와 클럭만 사용 */
+  label?: string;
+  /** 클럭 주기(ms). 클럭만 사용 */
+  period?: number;
 };
 
 /** 포트(연결점) id 규칙: 입력은 in0, in1 … / 출력은 out */
@@ -25,6 +29,7 @@ export const isInputPort = (handle: string | null | undefined) =>
 export const inputIndex = (handle: string) => Number(handle.slice(2));
 
 /** 시뮬레이션 입력으로 쓰는 최소한의 노드/선 형태 */
+/** on: 전원 켜짐 / 스위치 닫힘 / 클럭의 현재 레벨 */
 export type SimNode = { id: string; kind: ComponentKind; on: boolean };
 export type SimEdge = {
   source: string;
@@ -53,6 +58,8 @@ export type CircuitDocument = {
     kind: ComponentKind;
     position: { x: number; y: number };
     on: boolean;
+    label?: string;
+    period?: number;
   }[];
   edges: {
     id: string;

@@ -3,20 +3,24 @@
 import type { DragEvent } from "react";
 import { CATALOG, GATE_KINDS, IO_KINDS } from "@/lib/circuit/catalog";
 import type { ComponentKind, GateKind } from "@/lib/circuit/types";
-import { GateShape, LedShape, PowerShape, SwitchShape } from "./shapes";
+import { ClockShape, GateShape, LedShape, PowerShape, SwitchShape } from "./shapes";
 
 export const DRAG_MIME = "application/x-cd-component";
 
 function Icon({ kind }: { kind: ComponentKind }) {
   switch (kind) {
     case "POWER":
-      return <PowerShape className="h-6 w-6" />;
+      return <PowerShape className="h-7 w-7" />;
+    case "CLOCK":
+      return <ClockShape className="h-5 w-8" />;
     case "SWITCH":
-      return <SwitchShape closed className="h-5 w-10" />;
+      return <SwitchShape closed className="h-7 w-10" />;
     case "LED":
-      return <LedShape lit className="h-6 w-6" />;
+      return <LedShape lit className="h-7 w-7" />;
+    case "NOT":
+      return <GateShape kind="NOT" className="h-5 w-10" />;
     default:
-      return <GateShape kind={kind as GateKind} className="h-6 w-10" />;
+      return <GateShape kind={kind as GateKind} className="h-7 w-7" />;
   }
 }
 
@@ -45,9 +49,11 @@ export default function Toolbox({ onAdd }: ToolboxProps) {
               onDragStart={(e) => onDragStart(e, kind)}
               onClick={() => onAdd(kind)}
               title={`${CATALOG[kind].label}: ${CATALOG[kind].description}\n클릭하거나 캔버스로 끌어다 놓으세요.`}
-              className="flex h-16 w-full cursor-grab flex-col items-center justify-center gap-1 rounded-lg border border-cd-border bg-cd-bg text-xs font-medium transition-colors hover:border-cd-accent hover:bg-cd-panel-hover active:cursor-grabbing"
+              className="flex h-[4.5rem] w-full cursor-grab flex-col items-center justify-center gap-1 rounded-lg border border-cd-border bg-cd-bg text-xs font-medium transition-colors hover:border-cd-accent hover:bg-cd-panel-hover active:cursor-grabbing"
             >
-              <Icon kind={kind} />
+              <span className="flex h-7 items-center">
+                <Icon kind={kind} />
+              </span>
               {CATALOG[kind].label}
             </button>
           </li>

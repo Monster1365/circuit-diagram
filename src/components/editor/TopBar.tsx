@@ -3,10 +3,18 @@
 type TopBarProps = {
   componentCount: number;
   stable: boolean;
+  logOpen: boolean;
+  onToggleLog: () => void;
   onClearAll: () => void;
 };
 
-export default function TopBar({ componentCount, stable, onClearAll }: TopBarProps) {
+export default function TopBar({
+  componentCount,
+  stable,
+  logOpen,
+  onToggleLog,
+  onClearAll,
+}: TopBarProps) {
   return (
     <header className="flex h-12 shrink-0 items-center gap-3 border-b border-cd-border bg-cd-panel px-4">
       <div className="flex items-baseline gap-2">
@@ -28,6 +36,18 @@ export default function TopBar({ componentCount, stable, onClearAll }: TopBarPro
       {/* 내보내기 / 불러오기 / 테마 전환 버튼이 들어갈 자리 */}
       <div className="ml-auto flex items-center gap-3">
         <span className="text-xs text-cd-muted">부품 {componentCount}개</span>
+        <button
+          type="button"
+          onClick={onToggleLog}
+          aria-pressed={logOpen}
+          className={`rounded-md border px-3 py-1 text-sm font-medium transition-colors ${
+            logOpen
+              ? "border-cd-accent bg-cd-accent text-white"
+              : "border-cd-border bg-cd-bg hover:border-cd-accent"
+          }`}
+        >
+          로그 보기
+        </button>
         <button
           type="button"
           onClick={onClearAll}

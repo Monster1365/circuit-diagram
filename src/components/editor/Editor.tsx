@@ -12,46 +12,36 @@ import {
   type NodeMouseHandler,
   type NodeTypes,
 } from "@xyflow/react";
-import { useCallback, useEffect, useMemo, useRef, type DragEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from "react";
 import { useShallow } from "zustand/react/shallow";
-import { CATALOG, isComponentKind } from "@/lib/circuit/catalog";
+import { GRID, isComponentKind } from "@/lib/circuit/catalog";
 import { toDocument } from "@/lib/circuit/document";
 import { simulate } from "@/lib/circuit/simulate";
-import type {
-  CircuitDocument,
-  CircuitNodeType,
-  ComponentKind,
-  SimEdge,
-  SimNode,
-} from "@/lib/circuit/types";
+import type { CircuitDocument, ComponentKind, SimEdge, SimNode } from "@/lib/circuit/types";
 import { useCircuitStore, type CircuitNode } from "@/store/circuitStore";
+import { useClockStore } from "@/store/clockStore";
 import WireEdge from "./edges/WireEdge";
+import LogPanel from "./LogPanel";
+import ClockNode from "./nodes/ClockNode";
 import GateNode from "./nodes/GateNode";
 import LedNode from "./nodes/LedNode";
+import { nodeSize } from "./nodes/Ports";
 import PowerNode from "./nodes/PowerNode";
 import SwitchNode from "./nodes/SwitchNode";
 import { SimulationProvider } from "./SimulationContext";
 import Toolbox, { DRAG_MIME } from "./Toolbox";
 import TopBar from "./TopBar";
+import { useClockRunner } from "./useClockRunner";
 
 const nodeTypes: NodeTypes = {
   gate: GateNode,
   power: PowerNode,
   switch: SwitchNode,
   led: LedNode,
+  clock: ClockNode,
 };
 
 const edgeTypes: EdgeTypes = { wire: WireEdge };
-
-/** 부품을 추가할 때 마우스 위치/화면 중앙에 부품 중심이 오도록 쓰는 크기 */
-const NODE_SIZE: Record<CircuitNodeType, { w: number; h: number }> = {
-  gate: { w: 80, h: 50 },
-  power: { w: 56, h: 56 },
-  switch: { w: 60, h: 30 },
-  led: { w: 40, h: 40 },
-};
-
-const GRID = 20;
 
 export type EditorProps = {
   /** 처음 열 때 불러올 회로 (불러오기/프로젝트 페이지에서 사용 예정) */
@@ -97,6 +87,7 @@ function EditorInner({ initialDocument, onChange }: EditorProps) {
   const { screenToFlowPosition } = useReactFlow();
   const wrapperRef = useRef<HTMLDivElement>(null);
   const clickAddCount = useRef(0);
+  const [logOpen, setLogOpen] = useState(false);
 
   useEffect(() => {
     if (initialDocument) loadDocument(initialDocument);
@@ -107,10 +98,17 @@ function EditorInner({ initialDocument, onChange }: EditorProps) {
   }, [nodes, edges, onChange]);
 
   // ── 시뮬레이션 ────────────────────────────────
+  useClockRunner(nodes);
+  const clockLevels = useClockStore((s) => s.levels);
+
   // 부품을 끄는 동안(위치만 바뀔 때)은 다시 계산하지 않도록
   // 시뮬레이션에 필요한 값만 문자열 키로 만들어 비교한다.
   const simKey = JSON.stringify({
-    nodes: nodes.map<SimNode>((n) => ({ id: n.id, kind: n.data.kind, on: n.data.on })),
+    nodes: nodes.map<SimNode>((n) => ({
+      id: n.id,
+      kind: n.data.kind,
+      on: n.data.kind === "CLOCK" ? (clockLevels[n.id] ?? false) : n.data.on,
+    })),
     edges: edges.map<SimEdge>((e) => ({
       source: e.source,
       sourceHandle: e.sourceHandle,
@@ -126,11 +124,12 @@ function EditorInner({ initialDocument, onChange }: EditorProps) {
   // ── 부품 추가 ────────────────────────────────
   const addAt = useCallback(
     (kind: ComponentKind, center: { x: number; y: number }) => {
-      const size = NODE_SIZE[CATALOG[kind].nodeType];
-      const snap = (v: number) => Math.round(v / (GRID / 2)) * (GRID / 2);
+      // 부품 왼쪽 위가 격자점에 오도록 맞춘다 → 연결점이 항상 격자선 위에 놓인다
+      const { width, height } = nodeSize(kind);
+      const snap = (v: number) => Math.round(v / GRID) * GRID;
       addComponent(kind, {
-        x: snap(center.x - size.w / 2),
-        y: snap(center.y - size.h / 2),
+        x: snap(center.x - width / 2),
+        y: snap(center.y - height / 2),
       });
     },
     [addComponent],
@@ -186,12 +185,14 @@ function EditorInner({ initialDocument, onChange }: EditorProps) {
       <TopBar
         componentCount={nodes.length}
         stable={simulation.stable}
+        logOpen={logOpen}
+        onToggleLog={() => setLogOpen((open) => !open)}
         onClearAll={onClearAll}
       />
-      <div className="flex min-h-0 flex-1">
-        <Toolbox onAdd={addAtViewCenter} />
-        <div ref={wrapperRef} className="relative min-w-0 flex-1">
-          <SimulationProvider value={simulation}>
+      <SimulationProvider value={simulation}>
+        <div className="flex min-h-0 flex-1">
+          <Toolbox onAdd={addAtViewCenter} />
+          <div ref={wrapperRef} className="relative min-w-0 flex-1">
             <ReactFlow<CircuitNode>
               nodes={nodes}
               edges={edges}
@@ -206,7 +207,7 @@ function EditorInner({ initialDocument, onChange }: EditorProps) {
               onDrop={onDrop}
               forceColorMode="light"
               snapToGrid
-              snapGrid={[GRID / 2, GRID / 2]}
+              snapGrid={[GRID, GRID]}
               connectionRadius={24}
               connectionLineType={ConnectionLineType.SmoothStep}
               connectionLineStyle={{ stroke: "var(--cd-accent)", strokeWidth: 2.5 }}
@@ -221,9 +222,10 @@ function EditorInner({ initialDocument, onChange }: EditorProps) {
               />
               <Controls showInteractive={false} />
             </ReactFlow>
-          </SimulationProvider>
+          </div>
+          {logOpen && <LogPanel onClose={() => setLogOpen(false)} />}
         </div>
-      </div>
+      </SimulationProvider>
     </div>
   );
 }

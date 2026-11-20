@@ -1,5 +1,8 @@
 import type { CircuitNodeType, ComponentKind, GateKind } from "./types";
 
+/** 격자 한 칸 크기(px). 부품 크기와 연결점 위치는 모두 이 값의 배수다. */
+export const GRID = 20;
+
 export type ComponentSpec = {
   kind: ComponentKind;
   label: string;
@@ -7,8 +10,16 @@ export type ComponentSpec = {
   nodeType: CircuitNodeType;
   inputs: number;
   outputs: number;
+  /** 부품 크기 (격자 칸 수) */
+  size: { w: number; h: number };
+  /** 입력 연결점의 y 위치 (격자 칸 수, 위에서부터) */
+  inputYs: number[];
+  /** 출력 연결점의 y 위치 (격자 칸 수) */
+  outputY: number;
 };
 
+// 2입력 게이트: 4×4칸, 입력은 1칸·3칸, 출력은 2칸 높이
+// 1입력 게이트(NOT): 4×2칸, 입출력 모두 1칸 높이
 const gate = (
   kind: GateKind,
   inputs: number,
@@ -20,6 +31,9 @@ const gate = (
   nodeType: "gate",
   inputs,
   outputs: 1,
+  size: inputs === 1 ? { w: 4, h: 2 } : { w: 4, h: 4 },
+  inputYs: inputs === 1 ? [1] : [1, 3],
+  outputY: inputs === 1 ? 1 : 2,
 });
 
 export const CATALOG: Record<ComponentKind, ComponentSpec> = {
@@ -30,6 +44,20 @@ export const CATALOG: Record<ComponentKind, ComponentSpec> = {
     nodeType: "power",
     inputs: 0,
     outputs: 1,
+    size: { w: 2, h: 2 },
+    inputYs: [],
+    outputY: 1,
+  },
+  CLOCK: {
+    kind: "CLOCK",
+    label: "클럭",
+    description: "주기마다 0과 1을 번갈아 내보냅니다. +/− 버튼으로 주기를 바꿉니다.",
+    nodeType: "clock",
+    inputs: 0,
+    outputs: 1,
+    size: { w: 5, h: 2 },
+    inputYs: [],
+    outputY: 1,
   },
   SWITCH: {
     kind: "SWITCH",
@@ -38,6 +66,9 @@ export const CATALOG: Record<ComponentKind, ComponentSpec> = {
     nodeType: "switch",
     inputs: 1,
     outputs: 1,
+    size: { w: 3, h: 2 },
+    inputYs: [1],
+    outputY: 1,
   },
   LED: {
     kind: "LED",
@@ -46,6 +77,9 @@ export const CATALOG: Record<ComponentKind, ComponentSpec> = {
     nodeType: "led",
     inputs: 1,
     outputs: 0,
+    size: { w: 2, h: 2 },
+    inputYs: [1],
+    outputY: 1,
   },
   AND: gate("AND", 2, "두 입력이 모두 1일 때 1"),
   OR: gate("OR", 2, "입력 중 하나라도 1이면 1"),
@@ -56,7 +90,20 @@ export const CATALOG: Record<ComponentKind, ComponentSpec> = {
   XNOR: gate("XNOR", 2, "두 입력이 같을 때 1"),
 };
 
-export const IO_KINDS: ComponentKind[] = ["POWER", "SWITCH", "LED"];
+export const IO_KINDS: ComponentKind[] = ["POWER", "CLOCK", "SWITCH", "LED"];
+
+/** 클럭 주기 단계(ms). +/− 버튼으로 이 값들 사이를 오간다 */
+export const CLOCK_PERIODS = [100, 200, 500, 1000, 2000, 5000];
+export const DEFAULT_CLOCK_PERIOD = 1000;
+
+export const formatPeriod = (ms: number) =>
+  ms >= 1000 ? `${ms / 1000}s` : `${ms}ms`;
+
+/** 이름을 붙이는 부품의 이름 앞부분 */
+export const LABEL_PREFIX: Partial<Record<ComponentKind, string>> = {
+  LED: "LED",
+  CLOCK: "CLK",
+};
 export const GATE_KINDS: GateKind[] = [
   "AND",
   "OR",
@@ -79,6 +126,7 @@ export function evaluate(
   const [a = false, b = false] = inputs;
   switch (kind) {
     case "POWER":
+    case "CLOCK":
       return on;
     case "SWITCH":
       return on && a;

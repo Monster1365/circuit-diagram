@@ -103,3 +103,18 @@ describe("simulate", () => {
     expect(result.outputs.qn).toBe(false);
   });
 });
+
+describe("클럭", () => {
+  it("클럭의 현재 레벨을 그대로 출력한다", () => {
+    const run = (level: boolean) =>
+      simulate(
+        [
+          { id: "c", kind: "CLOCK", on: level },
+          { id: "l", kind: "LED", on: false },
+        ],
+        [wire("c", "l")],
+      ).outputs.l;
+    expect(run(true)).toBe(true);
+    expect(run(false)).toBe(false);
+  });
+});

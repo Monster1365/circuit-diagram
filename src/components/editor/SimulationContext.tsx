@@ -21,3 +21,7 @@ export function useSignalsOf(ids: (string | undefined)[]): boolean[] {
 export function useSimulationStable(): boolean {
   return useContext(SimulationContext).stable;
 }
+
+export function useSimulation(): SimResult {
+  return useContext(SimulationContext);
+}

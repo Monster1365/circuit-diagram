@@ -1,33 +1,22 @@
 "use client";
 
-import { Handle, Position, type NodeProps } from "@xyflow/react";
+import type { NodeProps } from "@xyflow/react";
 import { memo } from "react";
-import { OUTPUT_PORT, inputPort } from "@/lib/circuit/types";
 import type { CircuitNode } from "@/store/circuitStore";
 import { SwitchShape } from "../shapes";
+import Ports, { nodeSize } from "./Ports";
+import { useInputSignals } from "./useInputSignals";
 
 function SwitchNode({ data, selected }: NodeProps<CircuitNode>) {
+  const [input] = useInputSignals("SWITCH");
   return (
     <div
-      className={`cd-node ${selected ? "cd-node--selected" : ""}`}
-      style={{ width: 60, height: 30 }}
-      title="스위치: 클릭해서 열고 닫기"
+      className={`cd-node cd-clickable ${selected ? "cd-node--selected" : ""}`}
+      style={nodeSize("SWITCH")}
+      title={`스위치 ${data.on ? "닫힘" : "열림"}: 클릭해서 열고 닫기`}
     >
-      <SwitchShape closed={data.on} className="h-full w-full" />
-      <Handle
-        type="target"
-        position={Position.Left}
-        id={inputPort(0)}
-        className="cd-handle"
-        style={{ top: "66.7%" }}
-      />
-      <Handle
-        type="source"
-        position={Position.Right}
-        id={OUTPUT_PORT}
-        className="cd-handle"
-        style={{ top: "66.7%" }}
-      />
+      <SwitchShape closed={data.on} input={input} className="h-full w-full" />
+      <Ports kind="SWITCH" />
     </div>
   );
 }
