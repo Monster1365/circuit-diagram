@@ -7,7 +7,7 @@ import type { GateKind } from "@/lib/circuit/types";
 import type { CircuitNode } from "@/store/circuitStore";
 import { useSignal } from "../SimulationContext";
 import { GateShape } from "../shapes";
-import Ports, { nodeSize } from "./Ports";
+import NodeFrame from "./NodeFrame";
 import { useInputSignals } from "./useInputSignals";
 
 function GateNode({ id, data, selected }: NodeProps<CircuitNode>) {
@@ -16,14 +16,13 @@ function GateNode({ id, data, selected }: NodeProps<CircuitNode>) {
   const inputs = useInputSignals(kind);
 
   return (
-    <div
-      className={`cd-node ${selected ? "cd-node--selected" : ""}`}
-      style={nodeSize(kind)}
-      title={`${kind}: ${CATALOG[kind].description}`}
+    <NodeFrame
+      data={data}
+      selected={selected}
+      title={`${data.label ?? kind}: ${CATALOG[kind].description}`}
     >
       <GateShape kind={kind} inputs={inputs} output={output} className="h-full w-full" />
-      <Ports kind={kind} />
-    </div>
+    </NodeFrame>
   );
 }
 

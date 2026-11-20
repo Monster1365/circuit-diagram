@@ -18,6 +18,8 @@ export function toDocument(
       on: n.data.on,
       ...(n.data.label !== undefined && { label: n.data.label }),
       ...(n.data.period !== undefined && { period: n.data.period }),
+      ...(n.data.scale !== undefined && n.data.scale !== 1 && { scale: n.data.scale }),
+      ...(n.data.groupId !== undefined && { groupId: n.data.groupId }),
     })),
     edges: edges.map((e) => ({
       id: e.id,
@@ -39,7 +41,14 @@ export function fromDocument(doc: CircuitDocument): {
       id: n.id,
       type: CATALOG[n.kind].nodeType,
       position: n.position,
-      data: { kind: n.kind, on: n.on, label: n.label, period: n.period },
+      data: {
+        kind: n.kind,
+        on: n.on,
+        label: n.label,
+        period: n.period,
+        scale: n.scale,
+        groupId: n.groupId,
+      },
     })),
     edges: doc.edges.map((e) => ({
       id: e.id,

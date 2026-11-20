@@ -13,6 +13,9 @@
 - `src/lib/circuit/` — 부품 정의(`catalog.ts`), 시뮬레이션(`simulate.ts`, 순수 함수), 저장 문서 형식(`types.ts`의 `CircuitDocument`, `document.ts`)
 - `src/store/circuitStore.ts` — zustand 스토어 (노드/선, 연결 검증, 토글, 클럭 주기, 전체 삭제). 저장되는 회로 데이터
 - `src/store/clockStore.ts` — 클럭의 현재 레벨과 변화 기록(로그 그래프용). 저장하지 않는 실행 상태
+- 그룹: 노드 `data.groupId`로만 표현(`src/lib/circuit/groups.ts`). 그룹 부품 하나가 선택되면 전체 선택(`expandGroupSelection`), 끌기 직전 선택은 `NodeFrame`의 pointerdown에서 처리
+- 크기 배율: `data.scale`(1~4). `NodeFrame`이 내용은 기본 크기로 그린 뒤 확대하고 연결점은 배율 반영 위치에 둔다
+- 캔버스 조작: 왼쪽 드래그=선택 상자, 휠/두 손가락=이동, 가운데 버튼 드래그=이동, 핀치·Cmd/Ctrl+휠=확대
 - 격자 규칙: 부품 크기와 연결점 위치는 `catalog.ts`의 `GRID`(20px) 배수(`size`, `inputYs`, `outputY`). 노드에 CSS border를 쓰면 연결점이 밀리므로 테두리는 SVG나 inset box-shadow로 그린다
 - `src/components/editor/` — React Flow 캔버스, 도구상자, 상단바, 부품 노드, 선
 - `@xyflow/react`는 v13: 변경 적용은 `changes.applyTo(nodes)`, 색 모드는 `forceColorMode` prop

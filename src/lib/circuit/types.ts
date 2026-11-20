@@ -19,6 +19,10 @@ export type CircuitNodeData = {
   label?: string;
   /** 클럭 주기(ms). 클럭만 사용 */
   period?: number;
+  /** 크기 배율 (1~4). 기본 크기 × 배율이므로 연결점은 항상 격자선 위에 있다 */
+  scale?: number;
+  /** 속한 그룹 id (group-1 …). 그룹에 속하지 않으면 없음 */
+  groupId?: string;
 };
 
 /** 포트(연결점) id 규칙: 입력은 in0, in1 … / 출력은 out */
@@ -60,6 +64,8 @@ export type CircuitDocument = {
     on: boolean;
     label?: string;
     period?: number;
+    scale?: number;
+    groupId?: string;
   }[];
   edges: {
     id: string;

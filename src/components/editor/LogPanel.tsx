@@ -1,18 +1,24 @@
 "use client";
 
-import { useReactFlow } from "@xyflow/react";
 import { useEffect, useState } from "react";
 import { DEFAULT_CLOCK_PERIOD, formatPeriod } from "@/lib/circuit/catalog";
-import { useCircuitStore, type CircuitNode } from "@/store/circuitStore";
+import { useCircuitStore } from "@/store/circuitStore";
 import ClockGraph from "./ClockGraph";
-import { nodeSize } from "./nodes/Ports";
+import ResizeHandle from "./ResizeHandle";
 import { useSimulation } from "./SimulationContext";
+import { useFocusNodes } from "./useFocusNodes";
 
 /** 오른쪽 로그 섹션: 위에는 켜진 LED, 아래에는 클럭 파형 */
-export default function LogPanel({ onClose }: { onClose: () => void }) {
+type LogPanelProps = {
+  width: number;
+  onResize: (width: number) => void;
+  onClose: () => void;
+};
+
+export default function LogPanel({ width, onResize, onClose }: LogPanelProps) {
   const nodes = useCircuitStore((s) => s.nodes);
   const { outputs } = useSimulation();
-  const { setCenter, getZoom } = useReactFlow();
+  const focusNodes = useFocusNodes();
 
   const leds = nodes.filter((n) => n.data.kind === "LED");
   const litLeds = leds.filter((n) => outputs[n.id]);
@@ -26,16 +32,12 @@ export default function LogPanel({ onClose }: { onClose: () => void }) {
     return () => window.clearInterval(timer);
   }, [clocks.length]);
 
-  const focus = (node: CircuitNode) => {
-    const { width, height } = nodeSize(node.data.kind);
-    setCenter(node.position.x + width / 2, node.position.y + height / 2, {
-      zoom: Math.max(getZoom(), 1),
-      duration: 300,
-    });
-  };
-
   return (
-    <aside className="flex w-72 shrink-0 flex-col border-l border-cd-border bg-cd-panel">
+    <aside
+      className="relative flex shrink-0 flex-col border-l border-cd-border bg-cd-panel"
+      style={{ width }}
+    >
+      <ResizeHandle edge="left" width={width} onResize={onResize} label="로그 넓이" />
       <div className="flex h-10 shrink-0 items-center justify-between border-b border-cd-border px-3">
         <h2 className="text-sm font-semibold">로그</h2>
         <button
@@ -65,7 +67,7 @@ export default function LogPanel({ onClose }: { onClose: () => void }) {
               <li key={led.id}>
                 <button
                   type="button"
-                  onClick={() => focus(led)}
+                  onClick={() => focusNodes([led])}
                   title="캔버스에서 위치 보기"
                   className="flex w-full items-center gap-2 rounded-md border border-cd-border bg-cd-bg px-2 py-1.5 text-left text-sm hover:border-cd-accent"
                 >
@@ -90,7 +92,7 @@ export default function LogPanel({ onClose }: { onClose: () => void }) {
                 <li key={clock.id}>
                   <button
                     type="button"
-                    onClick={() => focus(clock)}
+                    onClick={() => focusNodes([clock])}
                     title="캔버스에서 위치 보기"
                     className="mb-1 flex w-full items-baseline justify-between text-xs hover:text-cd-accent"
                   >

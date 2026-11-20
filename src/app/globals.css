@@ -151,3 +151,89 @@ body {
   border-color: var(--cd-danger);
   box-shadow: none;
 }
+
+/* ── 그룹 ─────────────────────────────────── */
+.cd-group {
+  position: absolute;
+  top: 0;
+  left: 0;
+  border: 1.5px dashed var(--cd-muted);
+  border-radius: 10px;
+  pointer-events: none;
+}
+.cd-group--selected {
+  border-color: var(--cd-accent);
+  background: color-mix(in srgb, var(--cd-accent) 5%, transparent);
+}
+.cd-group-label {
+  position: absolute;
+  bottom: 100%;
+  left: 6px;
+  margin-bottom: 2px;
+  font-size: 10px;
+  font-weight: 600;
+  white-space: nowrap;
+  color: var(--cd-muted);
+}
+.cd-group--selected .cd-group-label {
+  color: var(--cd-accent);
+}
+
+/* ── 선택 도구 모음 ────────────────────────── */
+.cd-bar-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 24px;
+  border-radius: 5px;
+  border: 1px solid transparent;
+}
+.cd-bar-btn:hover:not(:disabled) {
+  border-color: var(--cd-border);
+  background: var(--cd-panel-hover);
+}
+.cd-bar-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+/* ── 배치된 부품 목록 ──────────────────────── */
+.cd-list-item {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 6px;
+  border-radius: 5px;
+  padding: 3px 6px;
+  text-align: left;
+  font-size: 12px;
+}
+.cd-list-item:hover {
+  background: var(--cd-panel-hover);
+}
+.cd-list-item--selected,
+.cd-list-item--selected:hover {
+  background: color-mix(in srgb, var(--cd-accent) 14%, transparent);
+  color: var(--cd-accent);
+}
+
+/* ── 패널 넓이 조절 손잡이 ─────────────────── */
+.cd-resize-handle {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 10;
+  width: 6px;
+  cursor: col-resize;
+  touch-action: none;
+}
+.cd-resize-handle:hover,
+.cd-resize-handle:focus-visible,
+body.cd-resizing .cd-resize-handle {
+  background: color-mix(in srgb, var(--cd-accent) 40%, transparent);
+  outline: none;
+}
+body.cd-resizing {
+  cursor: col-resize;
+  user-select: none;
+}

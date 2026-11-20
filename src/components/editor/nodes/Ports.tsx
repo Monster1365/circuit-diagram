@@ -4,8 +4,8 @@ import { Handle, Position } from "@xyflow/react";
 import { CATALOG, GRID } from "@/lib/circuit/catalog";
 import { OUTPUT_PORT, inputPort, type ComponentKind } from "@/lib/circuit/types";
 
-/** 부품 정의(catalog)에 맞춰 연결점을 격자선 위에 배치한다 */
-export default function Ports({ kind }: { kind: ComponentKind }) {
+/** 부품 정의(catalog)에 맞춰 연결점을 격자선 위에 배치한다 (배율 반영) */
+export default function Ports({ kind, scale = 1 }: { kind: ComponentKind; scale?: number }) {
   const spec = CATALOG[kind];
   return (
     <>
@@ -16,7 +16,7 @@ export default function Ports({ kind }: { kind: ComponentKind }) {
           position={Position.Left}
           id={inputPort(i)}
           className="cd-handle"
-          style={{ top: y * GRID }}
+          style={{ top: y * GRID * scale }}
         />
       ))}
       {spec.outputs > 0 && (
@@ -25,15 +25,9 @@ export default function Ports({ kind }: { kind: ComponentKind }) {
           position={Position.Right}
           id={OUTPUT_PORT}
           className="cd-handle"
-          style={{ top: spec.outputY * GRID }}
+          style={{ top: spec.outputY * GRID * scale }}
         />
       )}
     </>
   );
-}
-
-/** 부품 크기(px) */
-export function nodeSize(kind: ComponentKind) {
-  const { w, h } = CATALOG[kind].size;
-  return { width: w * GRID, height: h * GRID };
 }

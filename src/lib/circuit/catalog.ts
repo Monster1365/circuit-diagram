@@ -99,11 +99,32 @@ export const DEFAULT_CLOCK_PERIOD = 1000;
 export const formatPeriod = (ms: number) =>
   ms >= 1000 ? `${ms / 1000}s` : `${ms}ms`;
 
-/** 이름을 붙이는 부품의 이름 앞부분 */
-export const LABEL_PREFIX: Partial<Record<ComponentKind, string>> = {
-  LED: "LED",
+/** 부품 이름 앞부분 (LED 1, CLK 1, AND 1 …) */
+export const LABEL_PREFIX: Record<ComponentKind, string> = {
+  POWER: "전원",
   CLOCK: "CLK",
+  SWITCH: "스위치",
+  LED: "LED",
+  AND: "AND",
+  OR: "OR",
+  NOT: "NOT",
+  NAND: "NAND",
+  NOR: "NOR",
+  XOR: "XOR",
+  XNOR: "XNOR",
 };
+
+/** 캔버스에 이름표를 보여주는 부품 */
+export const SHOW_LABEL_ON_CANVAS: ComponentKind[] = ["LED", "CLOCK"];
+
+export const MIN_SCALE = 1;
+export const MAX_SCALE = 4;
+
+/** 부품 크기(px) = 기본 칸 수 × 격자 × 배율 */
+export function componentSize(kind: ComponentKind, scale = 1) {
+  const { w, h } = CATALOG[kind].size;
+  return { width: w * GRID * scale, height: h * GRID * scale };
+}
 export const GATE_KINDS: GateKind[] = [
   "AND",
   "OR",

@@ -6,7 +6,7 @@ import { CLOCK_PERIODS, DEFAULT_CLOCK_PERIOD, formatPeriod } from "@/lib/circuit
 import { useCircuitStore, type CircuitNode } from "@/store/circuitStore";
 import { useSignal } from "../SimulationContext";
 import { ClockShape } from "../shapes";
-import Ports, { nodeSize } from "./Ports";
+import NodeFrame from "./NodeFrame";
 
 function ClockNode({ id, data, selected }: NodeProps<CircuitNode>) {
   const level = useSignal(id);
@@ -21,9 +21,10 @@ function ClockNode({ id, data, selected }: NodeProps<CircuitNode>) {
   };
 
   return (
-    <div
-      className={`cd-node cd-clock ${level ? "cd-clock--high" : ""} ${selected ? "cd-node--selected" : ""}`}
-      style={nodeSize("CLOCK")}
+    <NodeFrame
+      data={data}
+      selected={selected}
+      innerClassName={`cd-clock ${level ? "cd-clock--high" : ""}`}
       title={`${data.label ?? "클럭"}: 주기 ${formatPeriod(period)}`}
     >
       <button
@@ -53,9 +54,7 @@ function ClockNode({ id, data, selected }: NodeProps<CircuitNode>) {
       >
         +
       </button>
-      <Ports kind="CLOCK" />
-      {data.label && <span className="cd-node-label">{data.label}</span>}
-    </div>
+    </NodeFrame>
   );
 }
 

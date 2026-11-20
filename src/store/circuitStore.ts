@@ -9,8 +9,19 @@ import {
   type XYPosition,
 } from "@xyflow/react";
 import { create } from "zustand";
-import { CATALOG, DEFAULT_CLOCK_PERIOD, LABEL_PREFIX } from "@/lib/circuit/catalog";
+import {
+  CATALOG,
+  DEFAULT_CLOCK_PERIOD,
+  LABEL_PREFIX,
+  MAX_SCALE,
+  MIN_SCALE,
+} from "@/lib/circuit/catalog";
 import { fromDocument, toDocument } from "@/lib/circuit/document";
+import {
+  expandGroupSelection,
+  toggleGroup,
+  type GroupAction,
+} from "@/lib/circuit/groups";
 import {
   OUTPUT_PORT,
   isInputPort,
@@ -32,6 +43,12 @@ type CircuitState = {
   addComponent: (kind: ComponentKind, position: XYPosition) => void;
   toggle: (id: string) => void;
   setClockPeriod: (id: string, period: number) => void;
+  /** 선택된 부품들의 크기 배율을 delta만큼 바꾼다 (1~4) */
+  changeSelectedScale: (delta: number) => void;
+  /** 주어진 부품만 선택 (그룹이면 그룹 전체) */
+  selectNodes: (ids: string[]) => void;
+  /** 선택한 부품 묶기/풀기 */
+  toggleGroup: () => GroupAction;
   clearAll: () => void;
   loadDocument: (doc: CircuitDocument) => void;
   getDocument: () => CircuitDocument;
@@ -60,7 +77,13 @@ export const useCircuitStore = create<CircuitState>((set, get) => ({
   edges: [],
 
   onNodesChange: (changes) =>
-    set((state) => ({ nodes: changes.applyTo(state.nodes) })),
+    set((state) => {
+      const nodes = changes.applyTo(state.nodes);
+      const selections = changes
+        .getByType("select")
+        .map((c) => ({ id: c.id, selected: c.selected }));
+      return { nodes: expandGroupSelection(nodes, selections) };
+    }),
 
   onEdgesChange: (changes) =>
     set((state) => ({ edges: changes.applyTo(state.edges) })),
@@ -99,7 +122,7 @@ export const useCircuitStore = create<CircuitState>((set, get) => ({
       on: kind === "POWER",
     };
     const prefix = LABEL_PREFIX[kind];
-    if (prefix) data.label = `${prefix} ${nextLabelNumber(get().nodes, kind, prefix)}`;
+    data.label = `${prefix} ${nextLabelNumber(get().nodes, kind, prefix)}`;
     if (kind === "CLOCK") data.period = DEFAULT_CLOCK_PERIOD;
 
     const node: CircuitNode = {
@@ -124,6 +147,38 @@ export const useCircuitStore = create<CircuitState>((set, get) => ({
         n.id === id ? { ...n, data: { ...n.data, period } } : n,
       ),
     })),
+
+  changeSelectedScale: (delta) =>
+    set((state) => ({
+      nodes: state.nodes.map((n) => {
+        if (!n.selected) return n;
+        const current = n.data.scale ?? 1;
+        const scale = Math.min(MAX_SCALE, Math.max(MIN_SCALE, current + delta));
+        return scale === current ? n : { ...n, data: { ...n.data, scale } };
+      }),
+    })),
+
+  selectNodes: (ids) =>
+    set((state) => {
+      const wanted = new Set(ids);
+      const nodes = state.nodes.map((n) => {
+        const selected = wanted.has(n.id);
+        return n.selected === selected ? n : { ...n, selected };
+      });
+      return {
+        nodes: expandGroupSelection(
+          nodes,
+          ids.map((id) => ({ id, selected: true })),
+        ),
+        edges: state.edges.map((e) => (e.selected ? { ...e, selected: false } : e)),
+      };
+    }),
+
+  toggleGroup: () => {
+    const result = toggleGroup(get().nodes);
+    if (result.action) set({ nodes: result.nodes });
+    return result.action;
+  },
 
   clearAll: () => set({ nodes: [], edges: [] }),
 

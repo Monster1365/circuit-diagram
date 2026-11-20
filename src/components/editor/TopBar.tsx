@@ -1,6 +1,8 @@
 "use client";
 
 type TopBarProps = {
+  toolboxOpen: boolean;
+  onToggleToolbox: () => void;
   componentCount: number;
   stable: boolean;
   logOpen: boolean;
@@ -9,6 +11,8 @@ type TopBarProps = {
 };
 
 export default function TopBar({
+  toolboxOpen,
+  onToggleToolbox,
   componentCount,
   stable,
   logOpen,
@@ -16,7 +20,24 @@ export default function TopBar({
   onClearAll,
 }: TopBarProps) {
   return (
-    <header className="flex h-12 shrink-0 items-center gap-3 border-b border-cd-border bg-cd-panel px-4">
+    <header className="flex h-12 shrink-0 items-center gap-3 border-b border-cd-border bg-cd-panel px-3">
+      <button
+        type="button"
+        onClick={onToggleToolbox}
+        aria-pressed={toolboxOpen}
+        aria-label={toolboxOpen ? "도구상자 닫기" : "도구상자 열기"}
+        title={toolboxOpen ? "도구상자 닫기" : "도구상자 열기"}
+        className={`flex h-8 w-8 items-center justify-center rounded-md border transition-colors ${
+          toolboxOpen
+            ? "border-cd-border bg-cd-bg hover:border-cd-accent"
+            : "border-cd-accent bg-cd-accent text-white"
+        }`}
+      >
+        <svg viewBox="0 0 20 20" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={1.6}>
+          <rect x={2.5} y={3.5} width={15} height={13} rx={2} />
+          <line x1={7.5} y1={3.5} x2={7.5} y2={16.5} />
+        </svg>
+      </button>
       <div className="flex items-baseline gap-2">
         <span className="rounded-md bg-cd-text px-1.5 py-0.5 text-sm font-bold text-cd-bg">
           CD

@@ -7,6 +7,7 @@ import {
   Controls,
   ReactFlow,
   ReactFlowProvider,
+  SelectionMode,
   useReactFlow,
   type EdgeTypes,
   type NodeMouseHandler,
@@ -14,20 +15,21 @@ import {
 } from "@xyflow/react";
 import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from "react";
 import { useShallow } from "zustand/react/shallow";
-import { GRID, isComponentKind } from "@/lib/circuit/catalog";
+import { GRID, componentSize, isComponentKind } from "@/lib/circuit/catalog";
 import { toDocument } from "@/lib/circuit/document";
 import { simulate } from "@/lib/circuit/simulate";
 import type { CircuitDocument, ComponentKind, SimEdge, SimNode } from "@/lib/circuit/types";
 import { useCircuitStore, type CircuitNode } from "@/store/circuitStore";
 import { useClockStore } from "@/store/clockStore";
 import WireEdge from "./edges/WireEdge";
+import GroupOutlines from "./GroupOutlines";
 import LogPanel from "./LogPanel";
 import ClockNode from "./nodes/ClockNode";
 import GateNode from "./nodes/GateNode";
 import LedNode from "./nodes/LedNode";
-import { nodeSize } from "./nodes/Ports";
 import PowerNode from "./nodes/PowerNode";
 import SwitchNode from "./nodes/SwitchNode";
+import SelectionBar from "./SelectionBar";
 import { SimulationProvider } from "./SimulationContext";
 import Toolbox, { DRAG_MIME } from "./Toolbox";
 import TopBar from "./TopBar";
@@ -88,6 +90,24 @@ function EditorInner({ initialDocument, onChange }: EditorProps) {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const clickAddCount = useRef(0);
   const [logOpen, setLogOpen] = useState(false);
+  const [toolboxOpen, setToolboxOpen] = useState(true);
+  const [toolboxWidth, setToolboxWidth] = useState(232);
+  const [logWidth, setLogWidth] = useState(288);
+  const toggleGroup = useCircuitStore((s) => s.toggleGroup);
+
+  // Ctrl/Cmd + G: 선택한 부품 그룹 묶기 / 같은 키를 한 번 더 누르면 풀기
+  // (한글 입력 상태에서도 동작하도록 key 대신 물리 키 code로 확인)
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (!(event.metaKey || event.ctrlKey) || event.code !== "KeyG") return;
+      const target = event.target as HTMLElement | null;
+      if (target?.closest("input, textarea, [contenteditable='true']")) return;
+      event.preventDefault();
+      toggleGroup();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [toggleGroup]);
 
   useEffect(() => {
     if (initialDocument) loadDocument(initialDocument);
@@ -125,7 +145,7 @@ function EditorInner({ initialDocument, onChange }: EditorProps) {
   const addAt = useCallback(
     (kind: ComponentKind, center: { x: number; y: number }) => {
       // 부품 왼쪽 위가 격자점에 오도록 맞춘다 → 연결점이 항상 격자선 위에 놓인다
-      const { width, height } = nodeSize(kind);
+      const { width, height } = componentSize(kind);
       const snap = (v: number) => Math.round(v / GRID) * GRID;
       addComponent(kind, {
         x: snap(center.x - width / 2),
@@ -167,10 +187,12 @@ function EditorInner({ initialDocument, onChange }: EditorProps) {
     [addAt, screenToFlowPosition],
   );
 
-  // 전원/스위치는 클릭으로 켜고 끈다 (연결점을 누른 경우는 제외)
+  // 전원/스위치는 클릭으로 켜고 끈다
+  // (연결점을 누른 경우, Shift 등으로 여러 개를 고르는 중인 경우는 제외)
   const onNodeClick: NodeMouseHandler<CircuitNode> = useCallback(
     (event, node) => {
       if ((event.target as Element).closest(".react-flow__handle")) return;
+      if (event.shiftKey || event.metaKey || event.ctrlKey) return;
       if (node.data.kind === "POWER" || node.data.kind === "SWITCH") toggle(node.id);
     },
     [toggle],
@@ -183,6 +205,8 @@ function EditorInner({ initialDocument, onChange }: EditorProps) {
   return (
     <div className="flex h-dvh flex-col">
       <TopBar
+        toolboxOpen={toolboxOpen}
+        onToggleToolbox={() => setToolboxOpen((open) => !open)}
         componentCount={nodes.length}
         stable={simulation.stable}
         logOpen={logOpen}
@@ -191,7 +215,9 @@ function EditorInner({ initialDocument, onChange }: EditorProps) {
       />
       <SimulationProvider value={simulation}>
         <div className="flex min-h-0 flex-1">
-          <Toolbox onAdd={addAtViewCenter} />
+          {toolboxOpen && (
+            <Toolbox width={toolboxWidth} onResize={setToolboxWidth} onAdd={addAtViewCenter} />
+          )}
           <div ref={wrapperRef} className="relative min-w-0 flex-1">
             <ReactFlow<CircuitNode>
               nodes={nodes}
@@ -212,6 +238,18 @@ function EditorInner({ initialDocument, onChange }: EditorProps) {
               connectionLineType={ConnectionLineType.SmoothStep}
               connectionLineStyle={{ stroke: "var(--cd-accent)", strokeWidth: 2.5 }}
               deleteKeyCode={["Backspace", "Delete"]}
+              // 화면 이동: 터치패드 두 손가락 스크롤 / 마우스 가운데 버튼 드래그
+              // (왼쪽 버튼으로 배경을 끌면 이동 대신 선택 상자)
+              panOnScroll
+              panOnDrag={[1]}
+              zoomOnScroll={false}
+              zoomOnPinch
+              zoomActivationKeyCode={["Meta", "Control"]}
+              // 선택: 배경 드래그로 상자 선택, Shift(또는 Cmd/Ctrl) + 클릭으로 여러 개 선택
+              selectionOnDrag
+              selectionMode={SelectionMode.Partial}
+              selectionKeyCode={null}
+              multiSelectionKeyCode={["Shift", "Meta", "Control"]}
               minZoom={0.25}
               maxZoom={3}
             >
@@ -221,9 +259,17 @@ function EditorInner({ initialDocument, onChange }: EditorProps) {
                 color="var(--cd-grid)"
               />
               <Controls showInteractive={false} />
+              <GroupOutlines />
+              <SelectionBar />
             </ReactFlow>
           </div>
-          {logOpen && <LogPanel onClose={() => setLogOpen(false)} />}
+          {logOpen && (
+            <LogPanel
+              width={logWidth}
+              onResize={setLogWidth}
+              onClose={() => setLogOpen(false)}
+            />
+          )}
         </div>
       </SimulationProvider>
     </div>
