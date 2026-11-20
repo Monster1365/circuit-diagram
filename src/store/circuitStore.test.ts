@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
+import { findContactEdges } from "@/lib/circuit/contacts";
 import { PASTE_OFFSET, useCircuitStore } from "./circuitStore";
 
 const store = () => useCircuitStore.getState();
@@ -160,4 +161,55 @@ it("전체 선택", async () => {
   store().addComponent("OR", { x: 100, y: 0 });
   store().selectAll();
   expect(store().nodes.every((n) => n.selected)).toBe(true);
+});
+
+describe("여러 부품 크기 조절", () => {
+  const positions = () => store().nodes.map((n) => n.position);
+
+  it("그룹을 키우면 부품 사이 거리도 같은 비율로 늘어난다", () => {
+    store().addComponent("AND", { x: 100, y: 100 });
+    store().addComponent("LED", { x: 220, y: 120 });
+    store().selectAll();
+    store().toggleGroup();
+    store().changeSelectedScale(1); // ×1 → ×2
+    // 왼쪽 위(100,100)를 기준으로 거리 2배
+    expect(positions()).toEqual([
+      { x: 100, y: 100 },
+      { x: 340, y: 140 },
+    ]);
+    store().changeSelectedScale(-1); // 다시 ×1
+    expect(positions()).toEqual([
+      { x: 100, y: 100 },
+      { x: 220, y: 120 },
+    ]);
+  });
+
+  it("맞닿아 연결된 부품은 키운 뒤에도 맞닿아 있다", () => {
+    store().addComponent("POWER", { x: 0, y: 0 });
+    store().addComponent("LED", { x: 40, y: 0 });
+    store().selectAll();
+    store().changeSelectedScale(1);
+    const contacts = findContactEdges(
+      store().nodes.map((n) => ({ id: n.id, kind: n.data.kind, position: n.position, scale: n.data.scale })),
+      [],
+    );
+    expect(contacts).toHaveLength(1);
+  });
+
+  it("하나만 키우면 위치는 그대로다", () => {
+    store().addComponent("AND", { x: 100, y: 100 });
+    store().selectAll();
+    store().changeSelectedScale(1);
+    expect(positions()).toEqual([{ x: 100, y: 100 }]);
+    expect(store().nodes[0].data.scale).toBe(2);
+  });
+
+  it("더 키울 수 없으면 아무것도 바꾸지 않는다", () => {
+    store().addComponent("AND", { x: 0, y: 0 });
+    store().addComponent("OR", { x: 100, y: 0 });
+    store().selectAll();
+    for (let i = 0; i < 5; i++) store().changeSelectedScale(1);
+    expect(store().nodes.map((n) => n.data.scale)).toEqual([4, 4]);
+    expect(positions()[1]).toEqual({ x: 400, y: 0 });
+  });
 });

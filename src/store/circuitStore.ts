@@ -205,14 +205,34 @@ export const useCircuitStore = create<CircuitState>((set, get) => {
     },
 
     changeSelectedScale: (delta) => {
-      if (!get().nodes.some((n) => n.selected)) return;
+      const selected = get().nodes.filter((n) => n.selected);
+      const scaleOf = (n: CircuitNode) => n.data.scale ?? 1;
+      const nextScale = (n: CircuitNode) =>
+        Math.min(MAX_SCALE, Math.max(MIN_SCALE, scaleOf(n) + delta));
+      const changed = selected.filter((n) => nextScale(n) !== scaleOf(n));
+      if (changed.length === 0) return;
+
+      // 여러 부품을 함께 키우거나 줄일 때는 부품 사이 거리도 같은 비율로 바꾼다.
+      // 선택 영역의 왼쪽 위를 기준점으로 삼고, 새 위치는 격자에 맞춘다.
+      // (배율이 서로 다르면 바뀌는 비율의 평균을 쓴다)
+      const ratios = changed.map((n) => nextScale(n) / scaleOf(n));
+      const factor = ratios.reduce((sum, r) => sum + r, 0) / ratios.length;
+      const anchorX = Math.min(...selected.map((n) => n.position.x));
+      const anchorY = Math.min(...selected.map((n) => n.position.y));
+      const snap = (v: number) => Math.round(v / GRID) * GRID;
+      const spread = selected.length > 1;
+
       checkpoint();
       set((state) => ({
         nodes: state.nodes.map((n) => {
           if (!n.selected) return n;
-          const current = n.data.scale ?? 1;
-          const scale = Math.min(MAX_SCALE, Math.max(MIN_SCALE, current + delta));
-          return scale === current ? n : { ...n, data: { ...n.data, scale } };
+          const position = spread
+            ? {
+                x: snap(anchorX + (n.position.x - anchorX) * factor),
+                y: snap(anchorY + (n.position.y - anchorY) * factor),
+              }
+            : n.position;
+          return { ...n, position, data: { ...n.data, scale: nextScale(n) } };
         }),
       }));
     },
