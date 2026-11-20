@@ -3,6 +3,7 @@
 import { Panel, useReactFlow } from "@xyflow/react";
 import { useShallow } from "zustand/react/shallow";
 import { MAX_SCALE, MIN_SCALE } from "@/lib/circuit/catalog";
+import { selectedWholeGroup } from "@/lib/circuit/groups";
 import { useCircuitStore } from "@/store/circuitStore";
 
 const isMac = () =>
@@ -25,12 +26,7 @@ export default function SelectionBar() {
   const minScale = Math.min(...scales);
   const maxScale = Math.max(...scales);
 
-  const groupIds = new Set(selected.map((n) => n.data.groupId));
-  const [onlyGroup] = groupIds;
-  const isWholeGroup =
-    groupIds.size === 1 &&
-    !!onlyGroup &&
-    allNodes.every((n) => n.data.groupId !== onlyGroup || n.selected);
+  const isWholeGroup = selectedWholeGroup(allNodes) !== null;
   const shortcut = isMac() ? "⌘G" : "Ctrl+G";
 
   return (

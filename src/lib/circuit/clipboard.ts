@@ -60,17 +60,17 @@ export function pasteClipboard(
     const num = labelNumbers.get(kind) ?? nextLabelNumber(existing, kind, prefix);
     labelNumbers.set(kind, num + 1);
 
-    let groupId: string | undefined;
-    if (n.data.groupId) {
-      if (!groupMap.has(n.data.groupId)) groupMap.set(n.data.groupId, groupIdOf(groupNumber++));
-      groupId = groupMap.get(n.data.groupId);
-    }
+    // 안쪽 그룹까지 모두 새 그룹 번호로 바꾼다 (같은 그룹은 같은 새 번호)
+    const groupPath = n.data.groupPath?.map((g) => {
+      if (!groupMap.has(g)) groupMap.set(g, groupIdOf(groupNumber++));
+      return groupMap.get(g)!;
+    });
 
     return {
       id,
       type: n.type,
       position: { x: n.position.x + offset, y: n.position.y + offset },
-      data: { ...n.data, label: `${prefix} ${num}`, groupId },
+      data: { ...n.data, label: `${prefix} ${num}`, groupPath },
       selected: true,
     };
   });

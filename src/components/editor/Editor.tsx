@@ -13,7 +13,16 @@ import {
   type NodeMouseHandler,
   type NodeTypes,
 } from "@xyflow/react";
-import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type DragEvent,
+} from "react";
 import { useShallow } from "zustand/react/shallow";
 import { GRID, componentSize, isComponentKind } from "@/lib/circuit/catalog";
 import { toDocument } from "@/lib/circuit/document";
@@ -21,6 +30,7 @@ import { simulate } from "@/lib/circuit/simulate";
 import type { CircuitDocument, ComponentKind, SimEdge, SimNode } from "@/lib/circuit/types";
 import { useCircuitStore, type CircuitNode } from "@/store/circuitStore";
 import { useClockStore } from "@/store/clockStore";
+import { ledColorValue, useSettingsStore } from "@/store/settingsStore";
 import WireEdge from "./edges/WireEdge";
 import GroupOutlines from "./GroupOutlines";
 import LogPanel from "./LogPanel";
@@ -30,6 +40,7 @@ import LedNode from "./nodes/LedNode";
 import PowerNode from "./nodes/PowerNode";
 import SwitchNode from "./nodes/SwitchNode";
 import SelectionBar from "./SelectionBar";
+import SettingsDialog from "./SettingsDialog";
 import { SimulationProvider } from "./SimulationContext";
 import Toolbox, { DRAG_MIME } from "./Toolbox";
 import TopBar from "./TopBar";
@@ -86,13 +97,34 @@ function EditorInner({ initialDocument, onChange }: EditorProps) {
       loadDocument: s.loadDocument,
     })),
   );
-  const { screenToFlowPosition } = useReactFlow();
+  const { screenToFlowPosition, getViewport, setViewport } = useReactFlow();
   const wrapperRef = useRef<HTMLDivElement>(null);
   const clickAddCount = useRef(0);
   const [logOpen, setLogOpen] = useState(false);
   const [toolboxOpen, setToolboxOpen] = useState(true);
   const [toolboxWidth, setToolboxWidth] = useState(232);
   const [logWidth, setLogWidth] = useState(288);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const closeSettings = useCallback(() => setSettingsOpen(false), []);
+  const showGroupOutlines = useSettingsStore((s) => s.showGroupOutlines);
+  const ledColor = useSettingsStore((s) => s.ledColor);
+
+  // 저장해 둔 설정은 화면이 뜬 뒤 브라우저에서 불러온다
+  useEffect(() => {
+    void useSettingsStore.persist.rehydrate();
+  }, []);
+
+  // 도구상자를 열고 닫거나 넓이를 바꾸면 캔버스 왼쪽 끝이 움직이므로,
+  // 같은 만큼 화면 위치를 반대로 옮겨 회로가 제자리에 있게 한다 (로그 창과 같은 동작)
+  const toolboxSpace = toolboxOpen ? toolboxWidth : 0;
+  const prevToolboxSpace = useRef(toolboxSpace);
+  useLayoutEffect(() => {
+    const delta = toolboxSpace - prevToolboxSpace.current;
+    prevToolboxSpace.current = toolboxSpace;
+    if (delta === 0) return;
+    const viewport = getViewport();
+    void setViewport({ ...viewport, x: viewport.x - delta });
+  }, [toolboxSpace, getViewport, setViewport]);
 
   // 단축키 (Ctrl 또는 Mac의 Cmd)
   // 한글 입력 상태에서도 동작하도록 key 대신 물리 키 code로 확인한다.
@@ -100,7 +132,10 @@ function EditorInner({ initialDocument, onChange }: EditorProps) {
     const onKeyDown = (event: KeyboardEvent) => {
       if (!(event.metaKey || event.ctrlKey) || event.altKey) return;
       const target = event.target;
-      if (target instanceof Element && target.closest("input, textarea, [contenteditable='true']")) {
+      if (
+        target instanceof Element &&
+        target.closest("input, textarea, [contenteditable='true'], [role='dialog']")
+      ) {
         return;
       }
 
@@ -235,7 +270,10 @@ function EditorInner({ initialDocument, onChange }: EditorProps) {
   }, [clearAll]);
 
   return (
-    <div className="flex h-dvh flex-col">
+    <div
+      className="flex h-dvh flex-col"
+      style={{ "--cd-led-on": ledColorValue(ledColor) } as CSSProperties}
+    >
       <TopBar
         toolboxOpen={toolboxOpen}
         onToggleToolbox={() => setToolboxOpen((open) => !open)}
@@ -244,6 +282,7 @@ function EditorInner({ initialDocument, onChange }: EditorProps) {
         logOpen={logOpen}
         onToggleLog={() => setLogOpen((open) => !open)}
         onClearAll={onClearAll}
+        onOpenSettings={() => setSettingsOpen(true)}
       />
       <SimulationProvider value={simulation}>
         <div className="flex min-h-0 flex-1">
@@ -291,7 +330,7 @@ function EditorInner({ initialDocument, onChange }: EditorProps) {
                 color="var(--cd-grid)"
               />
               <Controls showInteractive={false} />
-              <GroupOutlines />
+              {showGroupOutlines && <GroupOutlines />}
               <SelectionBar />
             </ReactFlow>
           </div>
@@ -304,6 +343,7 @@ function EditorInner({ initialDocument, onChange }: EditorProps) {
           )}
         </div>
       </SimulationProvider>
+      {settingsOpen && <SettingsDialog onClose={closeSettings} />}
     </div>
   );
 }

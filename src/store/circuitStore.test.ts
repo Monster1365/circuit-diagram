@@ -121,11 +121,30 @@ describe("복사 / 붙여넣기 / 복제", () => {
     store().toggleGroup();
     store().copy();
     store().paste();
-    expect(store().nodes.map((n) => n.data.groupId)).toEqual([
-      "group-1",
-      "group-1",
-      "group-2",
-      "group-2",
+    expect(store().nodes.map((n) => n.data.groupPath)).toEqual([
+      ["group-1"],
+      ["group-1"],
+      ["group-2"],
+      ["group-2"],
+    ]);
+  });
+
+  it("중첩 그룹을 붙여넣으면 안쪽 그룹까지 새 번호를 받는다", async () => {
+    for (const kind of ["AND", "OR", "NOT", "NOR"] as const) store().addComponent(kind, { x: 0, y: 0 });
+    const ids = store().nodes.map((n) => n.id);
+    store().selectNodes(ids.slice(0, 2));
+    store().toggleGroup(); // 그룹 1
+    store().selectNodes(ids.slice(2));
+    store().toggleGroup(); // 그룹 2
+    store().selectAll();
+    store().toggleGroup(); // 그룹 3 (그룹 1 + 그룹 2)
+    store().copy();
+    store().paste();
+    expect(store().nodes.slice(4).map((n) => n.data.groupPath)).toEqual([
+      ["group-4", "group-5"],
+      ["group-4", "group-5"],
+      ["group-4", "group-6"],
+      ["group-4", "group-6"],
     ]);
   });
 

@@ -46,7 +46,7 @@ export default function NodeFrame({
   // 선택되지 않은 그룹 부품을 누르면 끌기가 시작되기 전에 그룹 전체를 먼저 선택한다.
   // (그래야 바로 끌어도 그룹이 함께 움직인다)
   const onPointerDownCapture = (event: PointerEvent) => {
-    if (!id || !data.groupId || selected || event.button !== 0) return;
+    if (!id || !data.groupPath?.length || selected || event.button !== 0) return;
     if (event.shiftKey || event.metaKey || event.ctrlKey) return;
     if ((event.target as Element).closest(".react-flow__handle")) return;
     selectNodes([id]);

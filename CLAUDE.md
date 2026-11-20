@@ -13,7 +13,8 @@
 - `src/lib/circuit/` — 부품 정의(`catalog.ts`), 시뮬레이션(`simulate.ts`, 순수 함수), 저장 문서 형식(`types.ts`의 `CircuitDocument`, `document.ts`)
 - `src/store/circuitStore.ts` — zustand 스토어 (노드/선, 연결 검증, 토글, 클럭 주기, 전체 삭제). 저장되는 회로 데이터
 - `src/store/clockStore.ts` — 클럭의 현재 레벨과 변화 기록(로그 그래프용). 저장하지 않는 실행 상태
-- 그룹: 노드 `data.groupId`로만 표현(`src/lib/circuit/groups.ts`). 그룹 부품 하나가 선택되면 전체 선택(`expandGroupSelection`), 끌기 직전 선택은 `NodeFrame`의 pointerdown에서 처리
+- 그룹: 노드 `data.groupPath`(바깥→안쪽 그룹 id 목록)로만 표현(`src/lib/circuit/groups.ts`). 묶기=경로 앞에 새 그룹 추가, 풀기=맨 앞 제거 → 중첩 그룹 지원. 부품 하나가 선택되면 가장 바깥 그룹 전체 선택(`expandGroupSelection`), 끌기 직전 선택은 `NodeFrame`의 pointerdown에서 처리
+- 설정: `src/store/settingsStore.ts` (localStorage, 그룹 점선·LED 색). 서버 렌더링과 어긋나지 않게 `skipHydration` 후 Editor에서 `rehydrate()`
 - 크기 배율: `data.scale`(1~4). `NodeFrame`이 내용은 기본 크기로 그린 뒤 확대하고 연결점은 배율 반영 위치에 둔다
 - 캔버스 조작: 왼쪽 드래그=선택 상자, 휠/두 손가락=이동, 가운데 버튼 드래그=이동, 핀치·Cmd/Ctrl+휠=확대
 - 되돌리기: store의 `checkpoint()`가 변경 직전 상태를 `past`에 기록(최대 100개). 같은 순간의 여러 변경(부품+선 삭제)은 하나로 합치고, 끌기는 시작 시점에 한 번만 기록. 선택 변경은 기록하지 않는다. 새 변경 작업을 추가할 때는 `checkpoint()`를 먼저 호출할 것

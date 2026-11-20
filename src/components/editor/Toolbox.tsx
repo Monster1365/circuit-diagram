@@ -2,7 +2,7 @@
 
 import type { DragEvent } from "react";
 import { CATALOG, GATE_KINDS, IO_KINDS } from "@/lib/circuit/catalog";
-import { groupMembers, groupName } from "@/lib/circuit/groups";
+import { buildGroupTree, groupName, membersOf, type GroupTreeItem } from "@/lib/circuit/groups";
 import type { ComponentKind, GateKind } from "@/lib/circuit/types";
 import { useCircuitStore, type CircuitNode } from "@/store/circuitStore";
 import ResizeHandle from "./ResizeHandle";
@@ -94,12 +94,11 @@ function PartGrid({
   );
 }
 
-/** 캔버스에 놓인 부품 목록. 그룹은 묶어서 보여준다. 누르면 선택 후 그 위치로 이동 */
+/** 캔버스에 놓인 부품 목록. 그룹은 (그룹 안의 그룹까지) 묶어서 보여준다. 누르면 선택 후 그 위치로 이동 */
 function PlacedList() {
   const nodes = useCircuitStore((s) => s.nodes);
   const focus = useFocusNodes();
-  const groups = groupMembers(nodes);
-  const ungrouped = nodes.filter((n) => !n.data.groupId);
+  const tree = buildGroupTree(nodes);
 
   return (
     <section className="flex min-h-0 flex-1 flex-col p-3">
@@ -113,32 +112,47 @@ function PlacedList() {
         </p>
       ) : (
         <ul className="-mx-1 min-h-0 flex-1 space-y-0.5 overflow-y-auto px-1">
-          {[...groups].map(([groupId, members]) => (
-            <li key={groupId}>
-              <button
-                type="button"
-                onClick={() => focus(members)}
-                className={`cd-list-item font-semibold ${members.every((m) => m.selected) ? "cd-list-item--selected" : ""}`}
-              >
-                <span className="text-cd-muted">▾</span>
-                {groupName(groupId)}
-                <span className="ml-auto text-[10px] font-normal text-cd-muted">
-                  {members.length}개
-                </span>
-              </button>
-              <ul className="ml-3 space-y-0.5 border-l border-cd-border pl-1.5">
-                {members.map((n) => (
-                  <PlacedItem key={n.id} node={n} onClick={() => focus([n])} />
-                ))}
-              </ul>
-            </li>
-          ))}
-          {ungrouped.map((n) => (
-            <PlacedItem key={n.id} node={n} onClick={() => focus([n])} />
+          {tree.map((item) => (
+            <TreeRow key={item.type === "group" ? item.id : item.node.id} item={item} focus={focus} />
           ))}
         </ul>
       )}
     </section>
+  );
+}
+
+function TreeRow({
+  item,
+  focus,
+}: {
+  item: GroupTreeItem<CircuitNode>;
+  focus: (nodes: CircuitNode[]) => void;
+}) {
+  if (item.type === "node") {
+    return <PlacedItem node={item.node} onClick={() => focus([item.node])} />;
+  }
+  const members = membersOf(item);
+  return (
+    <li>
+      <button
+        type="button"
+        onClick={() => focus(members)}
+        className={`cd-list-item font-semibold ${members.every((m) => m.selected) ? "cd-list-item--selected" : ""}`}
+      >
+        <span className="text-cd-muted">▾</span>
+        {groupName(item.id)}
+        <span className="ml-auto text-[10px] font-normal text-cd-muted">{members.length}개</span>
+      </button>
+      <ul className="ml-3 space-y-0.5 border-l border-cd-border pl-1.5">
+        {item.items.map((child) => (
+          <TreeRow
+            key={child.type === "group" ? child.id : child.node.id}
+            item={child}
+            focus={focus}
+          />
+        ))}
+      </ul>
+    </li>
   );
 }
 

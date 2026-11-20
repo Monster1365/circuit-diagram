@@ -19,7 +19,7 @@ export function toDocument(
       ...(n.data.label !== undefined && { label: n.data.label }),
       ...(n.data.period !== undefined && { period: n.data.period }),
       ...(n.data.scale !== undefined && n.data.scale !== 1 && { scale: n.data.scale }),
-      ...(n.data.groupId !== undefined && { groupId: n.data.groupId }),
+      ...(n.data.groupPath?.length && { groupPath: [...n.data.groupPath] }),
     })),
     edges: edges.map((e) => ({
       id: e.id,
@@ -47,7 +47,7 @@ export function fromDocument(doc: CircuitDocument): {
         label: n.label,
         period: n.period,
         scale: n.scale,
-        groupId: n.groupId,
+        groupPath: n.groupPath,
       },
     })),
     edges: doc.edges.map((e) => ({

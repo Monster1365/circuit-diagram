@@ -165,12 +165,13 @@ body {
   border-color: var(--cd-accent);
   background: color-mix(in srgb, var(--cd-accent) 5%, transparent);
 }
+/* 이름표는 상자 안쪽 위 여백에 둔다 → 그룹 안의 그룹 이름표와 겹치지 않는다 */
 .cd-group-label {
   position: absolute;
-  bottom: 100%;
+  top: 1px;
   left: 6px;
-  margin-bottom: 2px;
   font-size: 10px;
+  line-height: 12px;
   font-weight: 600;
   white-space: nowrap;
   color: var(--cd-muted);
@@ -254,5 +255,28 @@ body.cd-resizing {
 .cd-icon-btn:disabled {
   color: var(--cd-muted);
   opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ── 설정 팝업 ─────────────────────────────── */
+.cd-segment {
+  padding: 3px 10px;
+  border-radius: 4px;
+  color: var(--cd-muted);
+}
+.cd-segment--active {
+  background: var(--cd-panel-hover);
+  color: var(--cd-text);
+  font-weight: 600;
+}
+.cd-segment:disabled {
+  cursor: not-allowed;
+}
+.cd-soon-btn {
+  height: 32px;
+  border: 1px dashed var(--cd-border);
+  border-radius: 6px;
+  font-size: 13px;
+  color: var(--cd-muted);
   cursor: not-allowed;
 }
