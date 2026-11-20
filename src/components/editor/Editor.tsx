@@ -93,21 +93,53 @@ function EditorInner({ initialDocument, onChange }: EditorProps) {
   const [toolboxOpen, setToolboxOpen] = useState(true);
   const [toolboxWidth, setToolboxWidth] = useState(232);
   const [logWidth, setLogWidth] = useState(288);
-  const toggleGroup = useCircuitStore((s) => s.toggleGroup);
 
-  // Ctrl/Cmd + G: 선택한 부품 그룹 묶기 / 같은 키를 한 번 더 누르면 풀기
-  // (한글 입력 상태에서도 동작하도록 key 대신 물리 키 code로 확인)
+  // 단축키 (Ctrl 또는 Mac의 Cmd)
+  // 한글 입력 상태에서도 동작하도록 key 대신 물리 키 code로 확인한다.
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      if (!(event.metaKey || event.ctrlKey) || event.code !== "KeyG") return;
-      const target = event.target as HTMLElement | null;
-      if (target?.closest("input, textarea, [contenteditable='true']")) return;
-      event.preventDefault();
-      toggleGroup();
+      if (!(event.metaKey || event.ctrlKey) || event.altKey) return;
+      const target = event.target;
+      if (target instanceof Element && target.closest("input, textarea, [contenteditable='true']")) {
+        return;
+      }
+
+      const store = useCircuitStore.getState();
+      let handled = true;
+      switch (event.code) {
+        case "KeyC": // 복사
+          handled = store.copy();
+          break;
+        case "KeyX": // 잘라내기
+          handled = store.cut();
+          break;
+        case "KeyV": // 붙여넣기
+          handled = store.paste();
+          break;
+        case "KeyD": // 복제 (브라우저 북마크 단축키는 막는다)
+          store.duplicate();
+          break;
+        case "KeyA": // 전체 선택
+          store.selectAll();
+          break;
+        case "KeyZ": // 되돌리기 / Shift와 함께면 다시 실행
+          if (event.shiftKey) store.redo();
+          else store.undo();
+          break;
+        case "KeyY": // 다시 실행
+          store.redo();
+          break;
+        case "KeyG": // 그룹 묶기 / 같은 키를 한 번 더 누르면 풀기
+          store.toggleGroup();
+          break;
+        default:
+          handled = false;
+      }
+      if (handled) event.preventDefault();
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [toggleGroup]);
+  }, []);
 
   useEffect(() => {
     if (initialDocument) loadDocument(initialDocument);

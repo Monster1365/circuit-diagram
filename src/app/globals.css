@@ -237,3 +237,22 @@ body.cd-resizing {
   cursor: col-resize;
   user-select: none;
 }
+
+/* ── 상단바 아이콘 버튼 ────────────────────── */
+.cd-icon-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 6px;
+  color: var(--cd-text);
+}
+.cd-icon-btn:hover:not(:disabled) {
+  background: var(--cd-panel-hover);
+}
+.cd-icon-btn:disabled {
+  color: var(--cd-muted);
+  opacity: 0.5;
+  cursor: not-allowed;
+}

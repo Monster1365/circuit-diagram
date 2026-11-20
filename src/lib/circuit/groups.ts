@@ -28,14 +28,19 @@ export function groupMembers<T extends GroupableNode>(nodes: T[]): Map<string, T
   return groups;
 }
 
-function nextGroupId(nodes: GroupableNode[]): string {
+/** 새 그룹에 쓸 번호 (가장 큰 그룹 번호 + 1) */
+export function nextGroupNumber(nodes: GroupableNode[]): number {
   let max = 0;
   for (const n of nodes) {
     const num = Number(n.data.groupId?.slice(GROUP_PREFIX.length));
     if (Number.isFinite(num)) max = Math.max(max, num);
   }
-  return `${GROUP_PREFIX}${max + 1}`;
+  return max + 1;
 }
+
+export const groupIdOf = (num: number) => `${GROUP_PREFIX}${num}`;
+
+const nextGroupId = (nodes: GroupableNode[]) => groupIdOf(nextGroupNumber(nodes));
 
 /**
  * 선택 변경을 그룹 단위로 넓힌다.

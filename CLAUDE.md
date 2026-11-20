@@ -16,6 +16,8 @@
 - 그룹: 노드 `data.groupId`로만 표현(`src/lib/circuit/groups.ts`). 그룹 부품 하나가 선택되면 전체 선택(`expandGroupSelection`), 끌기 직전 선택은 `NodeFrame`의 pointerdown에서 처리
 - 크기 배율: `data.scale`(1~4). `NodeFrame`이 내용은 기본 크기로 그린 뒤 확대하고 연결점은 배율 반영 위치에 둔다
 - 캔버스 조작: 왼쪽 드래그=선택 상자, 휠/두 손가락=이동, 가운데 버튼 드래그=이동, 핀치·Cmd/Ctrl+휠=확대
+- 되돌리기: store의 `checkpoint()`가 변경 직전 상태를 `past`에 기록(최대 100개). 같은 순간의 여러 변경(부품+선 삭제)은 하나로 합치고, 끌기는 시작 시점에 한 번만 기록. 선택 변경은 기록하지 않는다. 새 변경 작업을 추가할 때는 `checkpoint()`를 먼저 호출할 것
+- 클립보드: `src/lib/circuit/clipboard.ts` (브라우저 메모리). 단축키는 `Editor.tsx`에서 물리 키 `event.code`로 처리(한글 입력 대응)
 - 격자 규칙: 부품 크기와 연결점 위치는 `catalog.ts`의 `GRID`(20px) 배수(`size`, `inputYs`, `outputY`). 노드에 CSS border를 쓰면 연결점이 밀리므로 테두리는 SVG나 inset box-shadow로 그린다
 - `src/components/editor/` — React Flow 캔버스, 도구상자, 상단바, 부품 노드, 선
 - `@xyflow/react`는 v13: 변경 적용은 `changes.applyTo(nodes)`, 색 모드는 `forceColorMode` prop

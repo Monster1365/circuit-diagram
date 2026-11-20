@@ -1,5 +1,9 @@
 "use client";
 
+import { useCircuitStore } from "@/store/circuitStore";
+
+const isMac = () => typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.userAgent);
+
 type TopBarProps = {
   toolboxOpen: boolean;
   onToggleToolbox: () => void;
@@ -19,6 +23,12 @@ export default function TopBar({
   onToggleLog,
   onClearAll,
 }: TopBarProps) {
+  const canUndo = useCircuitStore((s) => s.past.length > 0);
+  const canRedo = useCircuitStore((s) => s.future.length > 0);
+  const undo = useCircuitStore((s) => s.undo);
+  const redo = useCircuitStore((s) => s.redo);
+  const mod = isMac() ? "⌘" : "Ctrl+";
+
   return (
     <header className="flex h-12 shrink-0 items-center gap-3 border-b border-cd-border bg-cd-panel px-3">
       <button
@@ -33,16 +43,65 @@ export default function TopBar({
             : "border-cd-accent bg-cd-accent text-white"
         }`}
       >
-        <svg viewBox="0 0 20 20" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth={1.6}>
+        <svg
+          viewBox="0 0 20 20"
+          className="h-4 w-4"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={1.6}
+        >
           <rect x={2.5} y={3.5} width={15} height={13} rx={2} />
           <line x1={7.5} y1={3.5} x2={7.5} y2={16.5} />
         </svg>
       </button>
       <div className="flex items-baseline gap-2">
-        <span className="rounded-md bg-cd-text px-1.5 py-0.5 text-sm font-bold text-cd-bg">
-          CD
-        </span>
+        <span className="rounded-md bg-cd-text px-1.5 py-0.5 text-sm font-bold text-cd-bg">CD</span>
         <span className="text-sm font-semibold">circuit-diagram</span>
+      </div>
+
+      <div className="ml-2 flex items-center gap-1">
+        <button
+          type="button"
+          onClick={undo}
+          disabled={!canUndo}
+          aria-label="되돌리기"
+          title={`되돌리기 (${mod}Z)`}
+          className="cd-icon-btn"
+        >
+          <svg
+            viewBox="0 0 20 20"
+            className="h-4 w-4"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={1.7}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M7.5 5 3.5 9l4 4" />
+            <path d="M3.5 9h8.5a4.5 4.5 0 0 1 0 9H9" />
+          </svg>
+        </button>
+        <button
+          type="button"
+          onClick={redo}
+          disabled={!canRedo}
+          aria-label="다시 실행"
+          title={`다시 실행 (${mod}Shift+Z)`}
+          className="cd-icon-btn"
+        >
+          <svg
+            viewBox="0 0 20 20"
+            className="h-4 w-4"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={1.7}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="m12.5 5 4 4-4 4" />
+            <path d="M16.5 9H8a4.5 4.5 0 0 0 0 9h3" />
+          </svg>
+        </button>
       </div>
 
       {!stable && (
