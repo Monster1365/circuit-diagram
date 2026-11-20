@@ -1,0 +1,121 @@
+@import "tailwindcss";
+@import "@xyflow/react/dist/style.css";
+
+/*
+ * 색상 토큰. 모든 색은 여기 변수로만 정의하고 컴포넌트는 변수를 참조한다.
+ * 다크모드를 추가할 때는 :root[data-theme="dark"] 블록에 같은 변수를 다시 정의하면 된다.
+ */
+:root {
+  --cd-bg: #ffffff;
+  --cd-grid: #e8ebf0;
+  --cd-panel: #f8f9fb;
+  --cd-panel-hover: #eef1f6;
+  --cd-border: #dde1e8;
+  --cd-text: #1f2328;
+  --cd-muted: #8a919c;
+  --cd-accent: #2f6fed;
+  --cd-danger: #d93a3a;
+  --cd-warning: #c77700;
+
+  --cd-gate-fill: #ffffff;
+  --cd-gate-stroke: #2b2f36;
+  --cd-wire-off: #9aa1ab;
+  --cd-wire-on: #16a34a;
+  --cd-led-off: #e5e7eb;
+  --cd-led-on: #ef4444;
+  --cd-handle-bg: #ffffff;
+}
+
+@theme inline {
+  --color-cd-bg: var(--cd-bg);
+  --color-cd-panel: var(--cd-panel);
+  --color-cd-panel-hover: var(--cd-panel-hover);
+  --color-cd-border: var(--cd-border);
+  --color-cd-text: var(--cd-text);
+  --color-cd-muted: var(--cd-muted);
+  --color-cd-accent: var(--cd-accent);
+  --color-cd-danger: var(--cd-danger);
+  --color-cd-warning: var(--cd-warning);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--cd-bg);
+  color: var(--cd-text);
+}
+
+/* ── 캔버스 ───────────────────────────────── */
+.react-flow {
+  --xy-background-color: var(--cd-bg);
+}
+
+/* ── 부품 공통 ─────────────────────────────── */
+.cd-node {
+  position: relative;
+  border-radius: 6px;
+  outline: 2px solid transparent;
+  outline-offset: 3px;
+  transition: outline-color 120ms;
+}
+.cd-node--selected {
+  outline-color: var(--cd-accent);
+}
+.cd-node--box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  width: 56px;
+  height: 56px;
+  background: var(--cd-gate-fill);
+  border: 2px solid var(--cd-gate-stroke);
+  border-radius: 10px;
+  cursor: pointer;
+}
+.react-flow__node-switch {
+  cursor: pointer;
+}
+.cd-badge {
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--cd-muted);
+}
+.cd-badge--on {
+  color: var(--cd-wire-on);
+}
+.cd-led--lit svg {
+  filter: drop-shadow(0 0 6px var(--cd-led-on));
+}
+
+/* ── 연결점(Handle) ─────────────────────────
+ * 기본은 작은 동그라미, 마우스를 올리면 커지고 강조된다.
+ * (React Flow가 translate(-50%,-50%)로 중심을 맞추므로 크기만 바꾼다)
+ */
+.react-flow__handle.cd-handle {
+  width: 10px;
+  height: 10px;
+  background: var(--cd-handle-bg);
+  border: 2px solid var(--cd-gate-stroke);
+  transition:
+    width 100ms,
+    height 100ms,
+    background-color 100ms,
+    border-color 100ms;
+}
+.react-flow__handle.cd-handle:hover,
+.react-flow__handle.cd-handle.connectingfrom,
+.react-flow__handle.cd-handle.connectingto {
+  width: 16px;
+  height: 16px;
+  background: var(--cd-accent);
+  border-color: var(--cd-accent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--cd-accent) 25%, transparent);
+}
+.react-flow__handle.cd-handle.connectingto:not(.valid) {
+  background: var(--cd-danger);
+  border-color: var(--cd-danger);
+  box-shadow: none;
+}
